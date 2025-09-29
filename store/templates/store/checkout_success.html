@@ -1,0 +1,12 @@
+
+{% extends "store/base.html" %}
+{% block content %}
+
+<div class="text-center my-5">
+  <h2 class="text-success">✅ Order Placed Successfully!</h2>
+  <p class="lead">Thank you for shopping with us. Your order has been received and is being processed.</p>
+  <a href="{% url 'store:product_list' %}" class="btn btn-primary mt-3">Continue Shopping</a>
+</div>
+
+{% endblock %}
+

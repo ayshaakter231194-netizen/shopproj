@@ -1,0 +1,155 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}My Clothing Store{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f8fafc;
+        }
+        .navbar-brand img {
+            height: 50px;
+        }
+        .img-hover-zoom {
+            transition: transform 0.5s ease;
+        }
+        .img-hover-zoom:hover {
+            transform: scale(1.1);
+        }
+        .product-image .overlay {
+            position: absolute;
+            top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .product-image:hover .overlay {
+            opacity: 1;
+        }
+        footer {
+            background-color: #1f2937;
+            color: #fff;
+            padding: 40px 0;
+        }
+        footer a {
+            color: #f59e0b;
+            text-decoration: none;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light shadow-sm">
+  <div class="container">
+    <!-- Logo -->
+    <a class="navbar-brand" href="{% url 'store:product_list' %}">
+      <img src="{% static 'store/images/logo1.jpg' %}" alt="My Shop" width="120">
+    </a>
+
+
+    <!-- Toggle button for mobile -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarContent">
+      <!-- Left menu: Categories -->
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        {% for category in categories %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="{% url 'store:product_list_by_category' category.slug %}" id="navbarDropdown{{ category.id }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              {{ category.name }}
+            </a>
+            {% if category.subcategories.exists %}
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdown{{ category.id }}">
+              {% for sub in category.subcategories.all %}
+                <li>
+                  <a class="dropdown-item" href="{% url 'store:product_list_by_sub' category.slug sub.slug %}">
+                    {{ sub.name }}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+
+      <!-- Right menu: Cart -->
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link position-relative" href="{% url 'store:view_cart' %}">
+            <i class="bi bi-cart3"></i> Cart
+            {% if request.session.cart %}
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{ request.session.cart|length }}
+              </span>
+            {% endif %}
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Main content -->
+<main class="container my-5">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <h5>About Us</h5>
+                <p>Professional clothing store offering the latest fashion trends for men, women and kids.</p>
+            </div>
+            <div class="col-md-4 mb-3">
+                <h5>Quick Links</h5>
+                <ul class="list-unstyled">
+                    <li><a href="{% url 'store:product_list' %}">Home</a></li>
+                    <li><a href="{% url 'store:view_cart' %}">Cart</a></li>
+                    <li><a href="{% url 'store:checkout' %}">Checkout</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4 mb-3">
+                <h5>Contact</h5>
+                <p>Email: ahilclothing@outlook.com</p>
+                <p>Phone: +880 1790 009817</p>
+                <p>Follow us on 
+                    <a href="#">Instagram</a>, 
+                    <a href="#">Facebook</a>
+                </p>
+            </div>
+        </div>
+        <div class="text-center mt-3">
+            &copy; {{ now|date:"Y" }} Ahil Clothing Store. All Rights Reserved.
+        </div>
+    </div>
+</footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

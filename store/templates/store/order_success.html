@@ -1,0 +1,8 @@
+{% extends "store/base.html" %}
+{% block content %}
+<div class="alert alert-success">
+  <h4>Order placed successfully</h4>
+  <p>Payment method: {{ method }}</p>
+</div>
+<a href="{% url 'store:product_list' %}" class="btn btn-primary">Continue Shopping</a>
+{% endblock %}

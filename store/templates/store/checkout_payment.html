@@ -1,0 +1,61 @@
+{% extends "store/base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2>Complete Your Payment</h2>
+  <p>Order #{{ order.id }} — Total: ${{ order.get_total_cost }}</p>
+
+  <form id="payment-form">
+    <div id="card-element" class="form-control mb-3">
+      <!-- Stripe Element will be inserted here -->
+    </div>
+    <div id="card-errors" role="alert" class="text-danger mb-3"></div>
+    <button id="submit-btn" class="btn btn-primary">Pay Now</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+const stripe = Stripe("{{ STRIPE_PUBLIC_KEY }}");
+const elements = stripe.elements();
+const card = elements.create('card', {hidePostalCode: true});
+card.mount('#card-element');
+
+card.on('change', function(event) {
+    const displayError = document.getElementById('card-errors');
+    if (event.error) {
+        displayError.textContent = event.error.message;
+    } else {
+        displayError.textContent = '';
+    }
+});
+
+const form = document.getElementById('payment-form');
+const submitBtn = document.getElementById('submit-btn');
+
+form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    submitBtn.disabled = true;
+
+    const {error, paymentIntent} = await stripe.confirmCardPayment("{{ client_secret }}", {
+        payment_method: {
+            card: card,
+            billing_details: {
+                name: "{{ order.customer_name }}",
+                email: "{{ order.email }}",
+            },
+        }
+    });
+
+    if (error) {
+        document.getElementById('card-errors').textContent = error.message;
+        submitBtn.disabled = false;
+    } else if (paymentIntent.status === 'succeeded') {
+        // Payment succeeded, redirect to success page
+        window.location.href = "{% url 'store:checkout_success' %}";
+    }
+});
+</script>
+{% endblock %}

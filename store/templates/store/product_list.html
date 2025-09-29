@@ -1,0 +1,41 @@
+{% extends 'store/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+  <div class="row">
+    <!-- Products -->
+    {% for product in products %}
+    <div class="col-lg-3 col-md-4 col-sm-6 mb-4">
+      <div class="card h-100 shadow-sm border-0">
+        <!-- Product image hover zoom -->
+        <div class="position-relative overflow-hidden">
+          <a href="{% url 'store:product_detail' product.slug %}">
+            <img src="{{ product.image.url }}" class="card-img-top product-zoom" alt="{{ product.title }}">
+          </a>
+        </div>
+
+        <div class="card-body">
+          <h6 class="card-title">{{ product.title|truncatechars:30 }}</h6>
+          <p class="text-danger fw-bold">৳{{ product.price }}</p>
+          <a href="{% url 'store:product_detail' product.slug %}" class="btn btn-sm btn-primary w-100">View Details</a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center">
+      <p>No products found.</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<style>
+.product-zoom {
+  transition: transform 0.3s ease;
+}
+.product-zoom:hover {
+  transform: scale(1.1);
+}
+</style>
+{% endblock %}
