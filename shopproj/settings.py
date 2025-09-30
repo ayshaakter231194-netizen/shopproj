@@ -28,7 +28,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your-default-secret-key")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = [os.getenv("RENDER_EXTERNAL_HOSTNAME"), "localhost"]
+ALLOWED_HOSTS = ['ahil160520.pythonanywhere.com']
 
 # Application definition
 
