@@ -1,6 +1,5 @@
-from itertools import product
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest
+from django.http import HttpResponse, JsonResponse
 from .models import Category, Product, ProductSizeVariant, SubCategory, Order, OrderItem
 from .cart import SessionCart
 from .forms import CheckoutForm
@@ -9,8 +8,10 @@ from django.conf import settings
 import stripe
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
 
 def product_list(request, category_slug=None, sub_slug=None):
     categories = Category.objects.all()
@@ -21,29 +22,37 @@ def product_list(request, category_slug=None, sub_slug=None):
     if sub_slug:
         sub = get_object_or_404(SubCategory, slug=sub_slug, category=category)
         products = products.filter(subcategory=sub)
-    return render(request, 'store/product_list.html', {'products': products, 'categories': categories})
+    return render(request, 'store/product_list.html', {
+        'products': products,
+        'categories': categories
+    })
+
 
 def product_detail(request, slug):
     product = get_object_or_404(Product, slug=slug, active=True)
     variants = product.variants.select_related('size')
-    return render(request, 'store/product_detail.html', {'product': product, 'variants': variants})
+    return render(request, 'store/product_detail.html', {
+        'product': product,
+        'variants': variants
+    })
 
-# AJAX cart endpoints
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
 
+# -----------------------------
+# AJAX Cart Endpoints
+# -----------------------------
 @require_POST
 def ajax_add_to_cart(request):
     variant_id = request.POST.get('variant_id')
     qty = int(request.POST.get('qty', 1))
     if not variant_id:
-        return JsonResponse({'error':'no variant id'}, status=400)
+        return JsonResponse({'error': 'no variant id'}, status=400)
     cart = SessionCart(request)
     try:
         cart.add(variant_id=int(variant_id), qty=qty)
     except ProductSizeVariant.DoesNotExist:
-        return JsonResponse({'error':'invalid variant'}, status=400)
+        return JsonResponse({'error': 'invalid variant'}, status=400)
     return JsonResponse({'success': True, 'cart_total': str(cart.total())})
+
 
 @require_POST
 def ajax_update_cart(request):
@@ -53,6 +62,7 @@ def ajax_update_cart(request):
     cart.update(variant_id=int(variant_id), qty=qty)
     return JsonResponse({'success': True, 'cart_total': str(cart.total())})
 
+
 @require_POST
 def ajax_remove_from_cart(request):
     variant_id = request.POST.get('variant_id')
@@ -60,12 +70,19 @@ def ajax_remove_from_cart(request):
     cart.remove(variant_id=int(variant_id))
     return JsonResponse({'success': True, 'cart_total': str(cart.total())})
 
+
 def view_cart(request):
     cart = SessionCart(request)
     items = list(cart.items())
-    return render(request, 'store/cart.html', {'items': items, 'cart_total': cart.total()})
+    return render(request, 'store/cart.html', {
+        'items': items,
+        'cart_total': cart.total()
+    })
 
+
+# -----------------------------
 # Checkout
+# -----------------------------
 def checkout(request):
     cart = SessionCart(request)
 
@@ -87,19 +104,22 @@ def checkout(request):
             mobile=mobile,
             address=address,
             payment_method=payment_method,
-            paid=(payment_method == "COD"),  # COD marked paid=False by default
+            paid=(payment_method == "COD"),
         )
 
         # Create OrderItems
         for item in cart.items():
-            variant = ProductSizeVariant.objects.get(pk=item["variant_id"])
+            variant_id = item.get("variant_id")
+            if not variant_id:
+                continue
+            variant = ProductSizeVariant.objects.get(pk=variant_id)
             OrderItem.objects.create(
                 order=order,
                 variant=variant,
                 product=variant.product,
-                size=item["size"],
+                size=item.get("size"),
                 price=variant.product.price,
-                qty=item["qty"],
+                qty=item.get("qty", 1),
             )
 
         # Clear cart
@@ -107,7 +127,6 @@ def checkout(request):
 
         # Payment handling
         if payment_method == "CARD":
-            # Stripe PaymentIntent
             intent = stripe.PaymentIntent.create(
                 amount=int(order.get_total_cost() * 100),  # in cents
                 currency="usd",
@@ -125,7 +144,11 @@ def checkout(request):
             return render(request, "store/checkout_success.html", {"order": order})
 
     # GET request
-    return render(request, "store/checkout.html", {"cart_items": cart.items(), "cart_total": cart.total()})
+    return render(request, "store/checkout.html", {
+        "cart_items": cart.items(),
+        "cart_total": cart.total()
+    })
+
 
 # -----------------------------
 # Stripe Webhook
@@ -138,9 +161,7 @@ def stripe_webhook(request):
 
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
-    except ValueError:
-        return HttpResponse(status=400)
-    except stripe.error.SignatureVerificationError:
+    except (ValueError, stripe.error.SignatureVerificationError):
         return HttpResponse(status=400)
 
     if event["type"] == "payment_intent.succeeded":
@@ -156,16 +177,13 @@ def stripe_webhook(request):
 
     return HttpResponse(status=200)
 
+
 # -----------------------------
-# Checkout Success & Cancel Pages
+# Checkout Success & Cancel
 # -----------------------------
 def checkout_success(request):
     return render(request, "store/checkout_success.html")
 
+
 def checkout_cancel(request):
     return render(request, "store/checkout_cancel.html")
-
-
-
-
-
